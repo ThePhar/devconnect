@@ -2,6 +2,7 @@ const express = require("express");
 const auth = require("../../middleware/auth");
 const { check, validationResult } = require("express-validator");
 const Profile = require("../../models/Profile");
+const User = require("../../models/User");
 const router = express.Router();
 
 const updateProfileHandler = [
@@ -68,12 +69,13 @@ router.post("/", [auth, updateProfileHandler], async (req, res) => {
 
   // Build Social Object
   profileFields.social = {};
-  if (social.youtube) profileFields.social.youtube = social.youtube;
-  if (social.twitter) profileFields.social.twitter = social.twitter;
-  if (social.facebook) profileFields.social.facebook = social.facebook;
-  if (social.linkedin) profileFields.social.linkedin = social.linkedin;
-  if (social.instagram) profileFields.social.instagram = social.instagram;
-
+  if (social) {
+    if (social.youtube) profileFields.social.youtube = social.youtube;
+    if (social.twitter) profileFields.social.twitter = social.twitter;
+    if (social.facebook) profileFields.social.facebook = social.facebook;
+    if (social.linkedin) profileFields.social.linkedin = social.linkedin;
+    if (social.instagram) profileFields.social.instagram = social.instagram;
+  }
   // Attempt to Update/Create Profile
   try {
     let profile = await Profile.findOne({ user: req.user.id });
@@ -134,6 +136,23 @@ router.get("/user/:user_id", async (req, res) => {
       return res.status(400).json({ msg: "Profile not found" });
 
     return res.status(500).send("Server error");
+  }
+});
+
+// @route    DELETE api/profile
+// @desc     Delete profile, user, and posts.
+// @access   Private
+router.delete("/", auth, async (req, res) => {
+  try {
+    // TODO Remove users posts.
+
+    await Profile.findOneAndRemove({ user: req.user.id });
+    await User.findOneAndRemove({ _id: req.user.id });
+
+    return res.json({ msg: "User deleted" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
 });
 
